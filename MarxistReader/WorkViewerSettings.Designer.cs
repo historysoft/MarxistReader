@@ -25,6 +25,18 @@ namespace MarxistReader {
 		
 		[global::System.Configuration.UserScopedSettingAttribute()]
 		[global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+		[global::System.Configuration.DefaultSettingValueAttribute("0")]
+		public int ColorScheme {
+			get {
+				return ((int)(this["ColorScheme"]));
+			}
+			set {
+				this["ColorScheme"] = value;
+			}
+		}
+		
+		[global::System.Configuration.UserScopedSettingAttribute()]
+		[global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
 		[global::System.Configuration.DefaultSettingValueAttribute("0, 0")]
 		public global::System.Drawing.Point Location {
 			get {

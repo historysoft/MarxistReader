@@ -43,6 +43,7 @@ namespace MarxistReader
 			// 
 			// webBrowser1
 			// 
+			this.webBrowser1.AllowWebBrowserDrop = false;
 			this.webBrowser1.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.webBrowser1.DownloadControlFlags = 0;
 			this.webBrowser1.Location = new System.Drawing.Point(0, 0);
@@ -52,7 +53,6 @@ namespace MarxistReader
 			this.webBrowser1.TabIndex = 0;
 			this.webBrowser1.Url = new System.Uri("about:blank", System.UriKind.Absolute);
 			this.webBrowser1.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebBrowser1DocumentCompleted);
-			this.webBrowser1.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.WebBrowser1PreviewKeyDown);
 			// 
 			// WorkViewer
 			// 
@@ -66,7 +66,6 @@ namespace MarxistReader
 			this.Text = "MarxistReader";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.WorkViewerFormClosing);
 			this.Load += new System.EventHandler(this.WorkViewerLoad);
-			this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.WorkViewerKeyUp);
 			this.ResumeLayout(false);
 
 		}

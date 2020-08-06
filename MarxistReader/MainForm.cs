@@ -6,6 +6,7 @@ using System.Net;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml;
+using System.Speech.Synthesis;
 using Newtonsoft.Json;
 
 namespace MarxistReader
@@ -30,6 +31,7 @@ namespace MarxistReader
 			public string title;
 			public string iconKey;
 			public int scrollY;
+			public int defaultScrollElementIndex;
 		}
 		
 		struct WebsiteLanguage{
@@ -41,6 +43,7 @@ namespace MarxistReader
 		
 		List<WorkItem> WorkItemList = new List<WorkItem>();
 		List<WebsiteLanguage> WebsiteLanguageList = new List<WebsiteLanguage>();
+		public static SpeechSynthesizer tts = null;
 		
 		void MainFormLoad(object sender, EventArgs e){
 			openWorksListView.Items.Add("< New > ", "marx_icon");
@@ -53,6 +56,8 @@ namespace MarxistReader
 					foreach(XmlNode listNode in xml.DocumentElement.SelectSingleNode("/WorkItems").ChildNodes){
 						if(listNode.Name == "WorkItem"){
 							WorkItem wi = new WorkItem();
+							wi.scrollY = 0;
+							wi.defaultScrollElementIndex = -1;
 							
 							foreach(XmlNode wiNode in listNode.ChildNodes){
 								
@@ -68,6 +73,9 @@ namespace MarxistReader
 										break;
 									case "ScrollY":
 										int.TryParse(wiNode.InnerText, out wi.scrollY);
+										break;
+									case "DefaultScrollElementIndex":
+										int.TryParse(wiNode.InnerText, out wi.defaultScrollElementIndex);
 										break;
 								}
 							}
@@ -92,9 +100,11 @@ namespace MarxistReader
 			
 			comboBoxLanguage.Items.Add("< Language >");
 			comboBoxLanguage.SelectedIndex = 0;
+			
+			comboBoxColorScheme.SelectedIndex = 0;
 		}
 		
-		void OpenWorksListViewMouseDoubleClick(object sender, MouseEventArgs e){
+		void OpenSelectedWork(){
 			if(openWorksListView.SelectedItems.Count == 1){
 				if(OpenedIndex == -1){
 					OpenedIndex = openWorksListView.SelectedItems[0].Index;
@@ -102,12 +112,15 @@ namespace MarxistReader
 					wv.Show();
 					
 					if(openWorksListView.SelectedItems[0].Index == 0){
+						wv.defaultScrollY = 0;
+						wv.defaultScrollElementIndex = -1;
 						wv.Uri = "https://www.marxists.org/";
 					}
 					
 					if(openWorksListView.SelectedItems[0].Index > 0){
 						WorkItem wi = WorkItemList[openWorksListView.SelectedItems[0].Index - 1];
 						wv.defaultScrollY = wi.scrollY;
+						wv.defaultScrollElementIndex = wi.defaultScrollElementIndex;
 						wv.Uri = wi.uri;
 					}
 				}else{
@@ -115,9 +128,13 @@ namespace MarxistReader
 				}
 			}
 		}
+		
+		void OpenWorksListViewMouseDoubleClick(object sender, MouseEventArgs e){
+			OpenSelectedWork();
+		}
 
 		void wv_FormClosing(object sender, FormClosingEventArgs e){
-			if(wv.Uri != "about:blank"){
+			if(wv.Uri != "about:blank" && wv.CanSaveURL){
 				WorkItem wi;
 				
 				int NewIndex = OpenedIndex;
@@ -148,6 +165,7 @@ namespace MarxistReader
 				}
 				
 				wi.scrollY = wv.scrollY;
+				wi.defaultScrollElementIndex = wv.scrollTopElementIndex;
 				WorkItemList[NewIndex] = wi;
 				
 				if(OpenedIndex == 0){
@@ -164,14 +182,20 @@ namespace MarxistReader
 		
 		void OpenWorksListViewKeyUp(object sender, KeyEventArgs e)
 		{
-			if(e.KeyData == Keys.Delete){
-				if(openWorksListView.SelectedItems.Count >= 1){
-					if(MessageBox.Show("Delete for sure?", Text, MessageBoxButtons.YesNo) == DialogResult.Yes){
-						foreach(ListViewItem item in openWorksListView.SelectedItems){
-							if(item.Index != 0){
-								WorkItemList.RemoveAt(item.Index - 1);
-								openWorksListView.Items.Remove(item);
-							}
+			if(e.KeyData == Keys.Enter){
+				OpenSelectedWork();
+			}else if(e.KeyData == Keys.Delete){
+				DeleteSelectedWorks();
+			}
+		}
+		
+		void DeleteSelectedWorks(){
+			if(openWorksListView.SelectedItems.Count >= 1){
+				if(MessageBox.Show("Delete for sure?", Text, MessageBoxButtons.YesNo) == DialogResult.Yes){
+					foreach(ListViewItem item in openWorksListView.SelectedItems){
+						if(item.Index != 0){
+							WorkItemList.RemoveAt(item.Index - 1);
+							openWorksListView.Items.Remove(item);
 						}
 					}
 				}
@@ -188,6 +212,7 @@ namespace MarxistReader
 					xml.WriteElementString("Uri", wi.uri.ToString());
 					xml.WriteElementString("Title", wi.title);
 					xml.WriteElementString("IconKey", wi.iconKey);
+					xml.WriteElementString("DefaultScrollElementIndex", wi.defaultScrollElementIndex.ToString());
 					xml.WriteElementString("ScrollY", wi.scrollY.ToString());
 					xml.WriteEndElement();
 				}
@@ -222,6 +247,33 @@ namespace MarxistReader
 				Hide();
 				wv.Show();
 				wv.Uri = BASE_URL + WebsiteLanguageList[comboBoxLanguage.SelectedIndex - 1].href;
+			}
+		}
+		
+		void OpenURLButtonClick(object sender, EventArgs e){
+			string url =
+				Microsoft.VisualBasic.Interaction.InputBox("Please enter the custom URL.",
+				                                           Text,
+				                                           "",
+				                                           0,
+				                                           0);
+			if(!String.IsNullOrEmpty(url)){
+				OpenedIndex = 0;
+				Hide();
+				wv.Show();
+				wv.Uri = url;
+			}
+		}
+		
+		void ToolStripMenuItem1Click(object sender, EventArgs e)
+		{
+			DeleteSelectedWorks();
+		}
+		
+		void ComboBoxColorSchemeSelectedIndexChanged(object sender, EventArgs e)
+		{
+			if(comboBoxColorScheme.SelectedIndex > 0){
+				WorkViewerSettings.Default.ColorScheme = comboBoxColorScheme.SelectedIndex - 1;
 			}
 		}
 	}
